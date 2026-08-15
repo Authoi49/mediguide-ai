@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { supabase } from '../supabaseClient'
 
 const LANGUAGES = [
   { code: 'english', label: 'English' },
@@ -9,18 +10,39 @@ const LANGUAGES = [
 function ChatWindow() {
   const [language, setLanguage] = useState('english')
   const [input, setInput] = useState('')
+  const [loading, setLoading] = useState(false)
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      text: 'Hi, I\'m MediGuide AI. Describe your symptoms and I\'ll help guide you. This is not a diagnosis — for emergencies, seek immediate medical care.',
+      text: "Hi, I'm MediGuide AI. Describe your symptoms and I'll help guide you. This is not a diagnosis — for emergencies, seek immediate medical care.",
     },
   ])
 
-  function handleSend() {
-    if (!input.trim()) return
-    setMessages((prev) => [...prev, { role: 'user', text: input }])
+  async function handleSend() {
+    if (!input.trim() || loading) return
+
+    const userMessage = { role: 'user', text: input }
+    const updatedMessages = [...messages, userMessage]
+    setMessages(updatedMessages)
     setInput('')
-    // AI response logic comes in Module 4 — placeholder for now
+    setLoading(true)
+
+    try {
+      const { data, error } = await supabase.functions.invoke('chat', {
+        body: { messages: updatedMessages, language },
+      })
+
+      if (error) throw error
+
+      setMessages((prev) => [...prev, { role: 'assistant', text: data.reply }])
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', text: '⚠️ Something went wrong: ' + err.message },
+      ])
+    } finally {
+      setLoading(false)
+    }
   }
 
   function handleKeyDown(e) {
@@ -53,7 +75,7 @@ function ChatWindow() {
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm leading-relaxed ${
+              className={`max-w-[75%] rounded-2xl px-4 py-2 text-sm leading-relaxed whitespace-pre-wrap ${
                 msg.role === 'user'
                   ? 'bg-green-600 text-white'
                   : 'bg-slate-800 text-slate-100'
@@ -63,6 +85,13 @@ function ChatWindow() {
             </div>
           </div>
         ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="max-w-[75%] rounded-2xl px-4 py-2 text-sm bg-slate-800 text-slate-400 italic">
+              Thinking...
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Input bar */}
@@ -73,11 +102,13 @@ function ChatWindow() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Describe your symptoms..."
-          className="flex-1 bg-slate-800 text-white text-sm rounded-full px-4 py-2 outline-none border border-slate-600 focus:border-green-500"
+          disabled={loading}
+          className="flex-1 bg-slate-800 text-white text-sm rounded-full px-4 py-2 outline-none border border-slate-600 focus:border-green-500 disabled:opacity-50"
         />
         <button
           onClick={handleSend}
-          className="bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-5 py-2 rounded-full transition"
+          disabled={loading}
+          className="bg-green-600 hover:bg-green-500 text-white text-sm font-medium px-5 py-2 rounded-full transition disabled:opacity-50"
         >
           Send
         </button>
