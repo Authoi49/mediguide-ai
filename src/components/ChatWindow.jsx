@@ -172,35 +172,35 @@ function ChatWindow({ initialPatientState }) {
               </span>
             </div>
             <div className="flex flex-wrap gap-1.5">
-              {patientState.symptoms.map((s, i) => (
-                <span
-                  key={i}
-                  className="bg-teal-50 text-teal-700 text-xs font-medium px-2.5 py-1 rounded-full border border-teal-100"
-                >
-                  {s.name}
-                </span>
-              ))}
-              {patientState.symptoms
-                .filter((s) => s.duration)
-                .map((s, i) => (
-                  <span
-                    key={`dur-${i}`}
-                    className="bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-full"
-                  >
-                    {s.duration}
-                  </span>
-                ))}
-              {patientState.symptoms
-                .filter((s) => s.severity)
-                .map((s, i) => (
-                  <span
-                    key={`sev-${i}`}
-                    className="bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-full capitalize"
-                  >
-                    {s.severity}
-                  </span>
-                ))}
-            </div>
+  {patientState.symptoms.map((s, i) => (
+    <span
+      key={i}
+      className="bg-teal-50 text-teal-700 text-xs font-medium px-2.5 py-1 rounded-full border border-teal-100"
+    >
+      {s.name}
+    </span>
+  ))}
+  {[...new Set(patientState.symptoms.filter((s) => s.duration).map((s) => s.duration))].map(
+    (duration) => (
+      <span
+        key={`dur-${duration}`}
+        className="bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-full"
+      >
+        {duration}
+      </span>
+    )
+  )}
+  {[...new Set(patientState.symptoms.filter((s) => s.severity).map((s) => s.severity))].map(
+    (severity) => (
+      <span
+        key={`sev-${severity}`}
+        className="bg-slate-100 text-slate-600 text-xs font-medium px-2.5 py-1 rounded-full capitalize"
+      >
+        {severity}
+      </span>
+    )
+  )}
+</div>
           </div>
         )}
 
