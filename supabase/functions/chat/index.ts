@@ -44,7 +44,6 @@ Deno.serve(async (req) => {
       parts: [{ text: m.text }],
     }))
 
-    // --- Call 1: conversational reply ---
     const conversationSystemPrompt = `You are MediGuide AI, a multilingual health triage assistant. 
 The user is communicating in: ${language}.
 You are NOT a doctor and must NEVER give a definitive diagnosis.
@@ -55,7 +54,6 @@ clearly and immediately advise them to seek emergency care.`
 
     const reply = await callGemini(contents, conversationSystemPrompt)
 
-    // --- Call 2: structured extraction ---
     const extractionSystemPrompt = `You are a medical data extraction engine. 
 Read the conversation and output ONLY valid JSON (no markdown, no explanation) matching this exact schema:
 
@@ -67,7 +65,8 @@ Read the conversation and output ONLY valid JSON (no markdown, no explanation) m
   "associated_symptoms": [string],
   "relevant_history": [string],
   "risk_factors": [string],
-  "red_flags": [string]
+  "red_flags": [string],
+  "suggestedReplies": [string]
 }
 
 Rules:
@@ -75,6 +74,7 @@ Rules:
 - red_flags should only list clinically concerning symptoms the user has confirmed (e.g. "difficulty breathing", "severe chest pain", "loss of consciousness", "severe bleeding", "seizure").
 - If information is unknown, use null or an empty array.
 - language field should be: "${language}"
+- suggestedReplies: look at the LAST assistant message in the conversation. If it asks a yes/no question, set suggestedReplies to ["Yes", "No"]. If it asks about severity, set suggestedReplies to ["Mild", "Moderate", "Severe"]. If it asks an open-ended question needing free text (e.g. "describe your symptoms", "how long", "what medications"), set suggestedReplies to an empty array []. Only suggest replies when they would be genuinely quick, valid answers to the exact question just asked.
 - Current known state (merge/update this with any new info from the latest messages): ${JSON.stringify(currentState || {})}
 - Output ONLY the JSON object, nothing else.`
 
@@ -87,7 +87,10 @@ Rules:
       patientState = currentState || {}
     }
 
-    return new Response(JSON.stringify({ reply, patientState }), {
+    const suggestedReplies = patientState.suggestedReplies || []
+    delete patientState.suggestedReplies
+
+    return new Response(JSON.stringify({ reply, patientState, suggestedReplies }), {
       headers: {
         "Content-Type": "application/json",
         "Access-Control-Allow-Origin": "*",
