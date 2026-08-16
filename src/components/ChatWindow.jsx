@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { evaluateRedFlags } from '../logic/redFlagRules'
 
 const LANGUAGES = [
   { code: 'english', label: 'English' },
@@ -12,6 +13,7 @@ function ChatWindow({ initialPatientState }) {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [patientState, setPatientState] = useState(initialPatientState || null)
+  const [triggeredRedFlags, setTriggeredRedFlags] = useState([])
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -37,6 +39,9 @@ function ChatWindow({ initialPatientState }) {
 
       setMessages((prev) => [...prev, { role: 'assistant', text: data.reply }])
       setPatientState(data.patientState)
+
+      const flags = evaluateRedFlags(data.patientState)
+      setTriggeredRedFlags(flags)
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -53,6 +58,15 @@ function ChatWindow({ initialPatientState }) {
 
   return (
     <div className="flex h-screen bg-slate-900 text-white">
+      {triggeredRedFlags.length > 0 && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-red-600 text-white px-4 py-3 text-sm font-semibold text-center">
+          ⚠️ EMERGENCY WARNING SIGNS DETECTED — Seek immediate medical attention.
+          <div className="text-xs font-normal mt-1">
+            Triggered: {triggeredRedFlags.map((f) => f.label).join(', ')}
+          </div>
+        </div>
+      )}
+
       {/* Chat column */}
       <div className="flex flex-col flex-1">
         <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700">
