@@ -7,11 +7,11 @@ const LANGUAGES = [
   { code: 'banglish', label: 'Banglish' },
 ]
 
-function ChatWindow() {
+function ChatWindow({ initialPatientState }) {
   const [language, setLanguage] = useState('english')
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [patientState, setPatientState] = useState(null)
+  const [patientState, setPatientState] = useState(initialPatientState || null)
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
